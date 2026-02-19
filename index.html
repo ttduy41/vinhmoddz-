@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VINHMODLAG V150 | SUPREME EDITION</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --main: #ff2d8d; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --border: rgba(255,255,255,0.1); --admin: #00ff88; }
+        .light-mode { --bg: #f1f5f9; --card: #ffffff; --text: #0f172a; --border: rgba(0,0,0,0.1); }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Lexend', sans-serif; transition: 0.3s; }
+        body { background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+        /* --- AUTHENTICATION SCREENS --- */
+        .auth-scr { position: fixed; inset: 0; background: var(--bg); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .auth-card { background: var(--card); padding: 35px; border-radius: 30px; width: 100%; max-width: 400px; border: 1px solid var(--border); text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
+
+        /* --- APP STRUCTURE --- */
+        header { height: 75px; background: var(--card); display: flex; align-items: center; padding: 0 25px; border-bottom: 2px solid var(--main); position: sticky; top: 0; z-index: 1000; }
+        .wallet { background: rgba(255,45,141,0.1); padding: 8px 15px; border-radius: 12px; color: var(--main); font-weight: bold; border: 1px solid var(--main); }
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+        .p-card { background: var(--card); border-radius: 25px; padding: 25px; border: 1px solid var(--border); }
+        .p-stat { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; font-size: 10px; font-weight: bold; text-align: center; }
+        .p-stat div { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 12px; border: 1px solid var(--border); }
+
+        /* --- MENU DRAWER --- */
+        #menu { position: fixed; top: 0; left: -420px; width: 380px; height: 100%; background: var(--card); z-index: 2000; padding: 25px; overflow-y: auto; border-right: 3px solid var(--main); box-shadow: 10px 0 50px rgba(0,0,0,0.5); }
+        .section-box { background: rgba(0,0,0,0.2); border-radius: 20px; padding: 15px; margin: 15px 0; border: 1px solid var(--border); }
+        .section-title { font-size: 11px; font-weight: bold; color: var(--main); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* --- UI ELEMENTS --- */
+        input, select, button { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; }
+        .btn-main { background: var(--main); color: #fff; font-weight: 900; border: none; cursor: pointer; text-transform: uppercase; }
+        .btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-logout { background: none; border: 1px solid #ff4757; color: #ff4757; margin-top: 30px; font-weight: bold; cursor: pointer; }
+        
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 5000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        #ovl { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1500; }
+    </style>
+</head>
+<body>
+
+    <div id="scrAuth" class="auth-scr">
+        <div id="authCard" class="auth-card">
+            <h1 style="color:var(--main); margin-bottom:5px; font-weight:900;">VINHMODLAG</h1>
+            <p id="authType" style="margin-bottom:20px; opacity:0.6; font-size:12px;">VUI LÒNG ĐĂNG NHẬP</p>
+            <input id="uName" placeholder="Tên tài khoản...">
+            <input type="password" id="uPass" placeholder="Mật khẩu...">
+            <button id="btnAuth" class="btn-main" onclick="handleAuth()">VÀO SHOP</button>
+            <p id="authSwitch" onclick="toggleAuthMode()" style="margin-top:20px; font-size:12px; cursor:pointer;">Chưa có tài khoản? <b style="color:var(--main)">Đăng ký ngay</b></p>
+        </div>
+    </div>
+
+    <div id="app" style="display:none">
+        <header>
+            <div onclick="opMenu()" style="font-size:24px; cursor:pointer; margin-right:20px; color:var(--main)">☰</div>
+            <div style="flex:1; font-weight:900; letter-spacing:1px;">VINHMODLAG</div>
+            <div class="wallet">💰 <span id="uBal">0</span>đ</div>
+        </header>
+
+        <div id="menu">
+            <h3 style="color:var(--main)">Chào sếp: <span id="uDisp"></span></h3>
+            <div onclick="document.body.classList.toggle('light-mode')" style="cursor:pointer; font-size:10px; color:#888;">🌓 Giao diện Sáng/Tối</div>
+            <hr style="opacity:0.1; margin: 15px 0;">
+
+            <div id="admNotiBox" class="section-box" style="display:none; border-color: var(--admin);">
+                <div class="section-title" style="color:var(--admin)">📢 THÔNG BÁO NẠP THẺ</div>
+                <div id="admNotiList" style="font-size:11px; color:var(--admin); max-height:120px; overflow-y:auto; font-family:monospace;"></div>
+                <button onclick="clearNotis()" style="background:none; border:none; color:#888; font-size:9px; cursor:pointer; text-decoration:underline; margin-top:5px;">Xóa lịch sử nạp thẻ</button>
+            </div>
+
+            <div id="admPanel" class="section-box" style="display:none; border-color: #0068ff;">
+                <div class="section-title" style="color:#0068ff">🛠 BẢNG ĐIỀU KHIỂN</div>
+                <select id="admProdSelect"></select>
+                <select id="admPlanSelect">
+                    <option>1 Ngày</option><option>7 Ngày</option><option>30 Ngày</option><option>Vĩnh Viễn</option>
+                </select>
+                <input id="admKeyInput" placeholder="Nhập Key nạp vào kho...">
+                <button class="btn-main" style="background:#0068ff" onclick="adminAddStock()">XÁC NHẬN NẠP HÀNG</button>
+                <hr style="opacity:0.1; margin:15px 0">
+                <input id="admUserTarget" placeholder="Tên khách hàng...">
+                <input type="number" id="admAmount" placeholder="Số tiền cộng...">
+                <button class="btn-main" style="background:var(--admin); color:#000" onclick="adminAddMoney()">CỘNG TIỀN VÍ</button>
+            </div>
+
+            <div class="section-box">
+                <div class="section-title">📋 KHO KEY CỦA BẠN</div>
+                <div id="histBody" style="font-size:11px;"></div>
+            </div>
+
+            <p style="font-size:11px; font-weight:bold;">NẠP TIỀN HỆ THỐNG</p>
+            <select onchange="swPay(this.value)">
+                <option value="momo">MoMo (QR Tự Động)</option>
+                <option value="card">Thẻ Cào (Duyệt Chậm)</option>
+            </select>
+            
+            <div id="pMomo">
+                <input type="number" id="pAmt" placeholder="Nhập số tiền...">
+                <button class="btn-main" style="background:#a50064" onclick="genQR()">TẠO MÃ QR NẠP</button>
+                <div id="mArea" style="display:none; background:#fff; padding:15px; border-radius:20px; text-align:center; margin-top:10px;">
+                    <img id="qrImg" style="width:100%;">
+                    <p style="color:#000; font-size:10px; font-weight:bold;">Nội dung: <span id="moMsg" style="color:#a50064"></span></p>
+                </div>
+            </div>
+
+            <div id="pCard" style="display:none">
+                <select id="cType"><option>Viettel</option><option>Garena</option><option>Zing</option></select>
+                <input id="cPin" placeholder="Mã PIN...">
+                <input id="cSeri" placeholder="Số Seri...">
+                <button id="btnSendCard" class="btn-main" onclick="clientSendCard()">GỬI THẺ ĐỢI DUYỆT</button>
+            </div>
+
+            <button class="btn-logout" onclick="doLogout()">ĐĂNG XUẤT</button>
+        </div>
+
+        <div class="container"><div class="grid" id="sGrid"></div></div>
+    </div>
+
+    <div id="modSucc" class="modal"><div class="auth-card" style="border:1px solid var(--main)">
+        <h2 style="color:var(--main)">GIAO DỊCH THÀNH CÔNG</h2>
+        <div id="resKey" style="background:#000; padding:15px; color:var(--main); margin:20px 0; border-radius:10px; word-break:break-all; font-family:monospace;"></div>
+        <button class="btn-main" onclick="copyKey()">SAO CHÉP KEY</button>
+        <button onclick="document.getElementById('modSucc').style.display='none'" style="background:none; border:none; color:#888; margin-top:15px; cursor:pointer;">ĐÓNG</button>
+    </div></div>
+
+    <div id="ovl" onclick="clMenu()"></div>
+
+    <script>
+        const DB_KEY = 'VINHMOD_V150_DB';
+        const SS_KEY = 'VINHMOD_V150_SESSION';
+        
+        let isLoginMode = true;
+        let data = JSON.parse(localStorage.getItem(DB_KEY)) || {
+            users: { "vinhmoddz": { p: "vinhmoddz", b: 10000000, admin: true, buys: [] } },
+            prods: [
+                { id: 0, name: "Itachi Ping V3", plans: {"1 Ngày": 10000, "7 Ngày": 50000, "Vĩnh Viễn": 500000}, stock: {"1 Ngày": [], "7 Ngày": [], "Vĩnh Viễn": []}, sold: 0 },
+                { id: 1, name: "Hopper Plus", plans: {"1 Ngày": 10000, "7 Ngày": 70000, "30 Ngày": 250000}, stock: {"1 Ngày": [], "7 Ngày": [], "30 Ngày": []}, sold: 0 }
+            ],
+            sysNoti: []
+        };
+
+        let user = localStorage.getItem(SS_KEY);
+
+        // --- HỆ THỐNG LƯU TRỮ ---
+        function save() { 
+            localStorage.setItem(DB_KEY, JSON.stringify(data)); 
+            if(user) { renderShop(); renderUser(); renderAdmin(); }
+        }
+
+        // --- ĐĂNG NHẬP & ĐĂNG KÝ ---
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('authType').innerText = isLoginMode ? "VUI LÒNG ĐĂNG NHẬP" : "TẠO TÀI KHOẢN MỚI";
+            document.getElementById('btnAuth').innerText = isLoginMode ? "VÀO SHOP" : "ĐĂNG KÝ NGAY";
+            document.getElementById('authSwitch').innerHTML = isLoginMode ? 'Chưa có tài khoản? <b style="color:var(--main)">Đăng ký ngay</b>' : 'Đã có tài khoản? <b style="color:var(--main)">Đăng nhập</b>';
+        }
+
+        function handleAuth() {
+            let u = document.getElementById('uName').value.trim();
+            let p = document.getElementById('uPass').value.trim();
+            if(!u || !p) return alert("Không được bỏ trống!");
+
+            if(isLoginMode) {
+                if(data.users[u] && data.users[u].p === p) {
+                    user = u; localStorage.setItem(SS_KEY, u); initApp();
+                } else alert("Sai tài khoản hoặc mật khẩu!");
+            } else {
+                if(data.users[u]) return alert("Tên này đã có người dùng!");
+                data.users[u] = { p: p, b: 0, admin: (u === "vinhmoddz"), buys: [] };
+                save(); alert("Đăng ký thành công! Hãy đăng nhập."); toggleAuthMode();
+            }
+        }
+
+        function doLogout() {
+            localStorage.removeItem(SS_KEY);
+            location.reload();
+        }
+
+        // --- KHỞI CHẠY APP ---
+        function initApp() {
+            document.getElementById('scrAuth').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            document.getElementById('uDisp').innerText = user;
+            if(data.users[user].admin) {
+                document.getElementById('admPanel').style.display = 'block';
+                document.getElementById('admNotiBox').style.display = 'block';
+                document.getElementById('admProdSelect').innerHTML = data.prods.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            }
+            save();
+        }
+
+        // --- GIAO DIỆN KHÁCH ---
+        function renderShop() {
+            document.getElementById('uBal').innerText = data.users[user].b.toLocaleString();
+            let g = document.getElementById('sGrid'); g.innerHTML = "";
+            data.prods.forEach(p => {
+                let stockTotal = Object.values(p.stock).reduce((a, b) => a + b.length, 0);
+                g.innerHTML += `
+                    <div class="p-card">
+                        <div class="p-stat"><div>✅ CÒN: ${stockTotal}</div><div>🛒 BÁN: ${p.sold}</div></div>
+                        <h3 style="color:var(--main); margin-bottom:15px; font-weight:900;">${p.name}</h3>
+                        <select id="pl-${p.id}">${Object.keys(p.plans).map(k=>`<option value="${k}">${k} - ${p.plans[k].toLocaleString()}đ</option>`).join('')}</select>
+                        <button class="btn-main" onclick="buy(${p.id})">MUA NGAY</button>
+                    </div>`;
+            });
+        }
+
+        function renderUser() {
+            let h = document.getElementById('histBody'); h.innerHTML = "";
+            if(data.users[user].buys.length === 0) h.innerHTML = "<p style='opacity:0.5'>Chưa có giao dịch.</p>";
+            data.users[user].buys.forEach((b, i) => {
+                h.innerHTML += `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #333;">
+                    <div><b>${b.n}</b><br><small style="opacity:0.6">${b.p}</small></div>
+                    <button onclick="showKey(${i})" style="width:80px; padding:6px; font-size:10px; background:var(--main); color:white; border:none; border-radius:6px; cursor:pointer;">XEM KEY</button>
+                </div>`;
+            });
+        }
+
+        function buy(id) {
+            let p = data.prods[id], plan = document.getElementById(`pl-${id}`).value;
+            if(data.users[user].b < p.plans[plan]) return alert("Sếp ơi, không đủ tiền rồi!");
+            if(p.stock[plan].length === 0) return alert("Gói này hiện đang hết hàng!");
+            
+            let key = p.stock[plan].shift();
+            data.users[user].b -= p.plans[plan];
+            p.sold++;
+            data.users[user].buys.unshift({ n: p.name, p: plan, k: key });
+            save(); 
+            document.getElementById('resKey').innerText = key; 
+            document.getElementById('modSucc').style.display='flex';
+        }
+
+        // --- NẠP TIỀN ---
+        function genQR() {
+            let amt = document.getElementById('pAmt').value; if(!amt) return alert("Nhập số tiền đã sếp!");
+            document.getElementById('moMsg').innerText = "NAP " + user;
+            document.getElementById('qrImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=2|99|0364684151|||0|0|${amt}|NAP%20${user}|transfer_p2p`;
+            document.getElementById('mArea').style.display='block';
+        }
+
+        function clientSendCard() {
+            let p = document.getElementById('cPin').value, s = document.getElementById('cSeri').value, t = document.getElementById('cType').value;
+            if(!p || !s) return alert("Nhập đủ PIN và Seri!");
+            data.sysNoti.unshift({ u: user, c: `${t} | PIN: ${p} | SERI: ${s}`, t: new Date().toLocaleTimeString() });
+            let btn = document.getElementById('btnSendCard');
+            btn.disabled = true; btn.innerText = "ĐANG CHỜ DUYỆT...";
+            save(); alert("Đã gửi! Đợi sếp Vinh duyệt nhé.");
+        }
+
+        // --- ADMIN ACTIONS ---
+        function renderAdmin() {
+            let l = document.getElementById('admNotiList');
+            l.innerHTML = data.sysNoti.length ? data.sysNoti.map(n => `<div style="padding:5px 0; border-bottom:1px solid #222;">[${n.t}] <b>${n.u}</b>: ${n.c}</div>`).join('') : "Chưa có yêu cầu.";
+        }
+
+        function clearNotis() { data.sysNoti = []; save(); }
+
+        function adminAddStock() {
+            let id = document.getElementById('admProdSelect').value, plan = document.getElementById('admPlanSelect').value, key = document.getElementById('admKeyInput').value.trim();
+            if(!key) return;
+            data.prods[id].stock[plan].push(key);
+            save(); document.getElementById('admKeyInput').value = ""; alert("Đã nạp kho thành công!");
+        }
+
+        function adminAddMoney() {
+            let u = document.getElementById('admUserTarget').value, a = parseInt(document.getElementById('admAmount').value);
+            if(data.users[u]) { data.users[u].b += a; save(); alert(`Đã cộng ${a}đ cho ${u}`); } else alert("Không thấy khách này!");
+        }
+
+        // --- UTILS ---
+        function showKey(i) { document.getElementById('resKey').innerText = data.users[user].buys[i].k; document.getElementById('modSucc').style.display='flex'; }
+        function copyKey() { navigator.clipboard.writeText(document.getElementById('resKey').innerText); alert("Đã copy key!"); }
+        function opMenu() { document.getElementById('menu').style.left = '0'; document.getElementById('ovl').style.display = 'block'; }
+        function clMenu() { document.getElementById('menu').style.left = '-420px'; document.getElementById('ovl').style.display = 'none'; }
+        function swPay(v) { document.getElementById('pMomo').style.display = (v==='momo'?'block':'none'); document.getElementById('pCard').style.display = (v==='card'?'block':'none'); }
+
+        // Kiểm tra phiên đăng nhập
+        if(user && data.users[user]) initApp();
+    </script>
+</body>
+  </html>
+  
